@@ -25,11 +25,14 @@ pub fn view<'a>(library: &'a Library, active: Option<&str>) -> Element<'a, Messa
         .map(|theme| card(theme, active == Some(theme.name.as_str())))
         .collect();
 
-    widget::scrollable(
-        widget::flex_row(cards)
-            .spacing(spacing.space_s)
-            .width(Length::Fill),
-    )
+    // flex_row hands its limits straight to each card, and the scrollable's
+    // limits carry the viewport height as a minimum. Wrapping it in a column
+    // resets that minimum so cards keep their natural height.
+    let grid = widget::flex_row(cards)
+        .spacing(spacing.space_s)
+        .width(Length::Fill);
+
+    widget::scrollable(widget::column::with_capacity(1).push(grid))
     .height(Length::Fill)
     .into()
 }

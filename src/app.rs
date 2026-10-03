@@ -115,7 +115,9 @@ impl cosmic::Application for AppModel {
                     vec![menu::Item::Button(fl!("about"), None, MenuAction::About)],
                 ),
             ),
-        ]);
+        ])
+        // The default 150px clips labels plus shortcuts, especially in wider fonts.
+        .item_width(menu::ItemWidth::Uniform(260));
 
         vec![menu_bar.into()]
     }
