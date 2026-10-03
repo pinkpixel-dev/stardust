@@ -37,3 +37,19 @@ What was decided: The editor covers colors, frosted glass, corner style presets,
 Why: Those two change the layout of every COSMIC app and are easy to break. Colors are what people actually want to swap.
 
 Rejected: Exposing every `ThemeBuilder` field from the start.
+
+### Decision: Compare themes by their saved RON, not with `==`
+
+What was decided: `library::same_theme` serializes both `ThemeBuilder`s with `ron::to_string` and compares the strings. `AppModel::refresh_active` uses it to find the active theme.
+
+Why: Old `v1` config files store colors as raw floats (`0.99203914`), and saved theme files store hex. After the hex round trip the floats differ slightly, so `ThemeBuilder` `==` said "different" for a theme that was identical on screen. A check against the live config on CachyOS returned `exact_eq=false same_theme=true`.
+
+Rejected: Plain `PartialEq`, which leaves the checkmark missing on any desktop with `v1` leftovers. Comparing with a float tolerance, which needs a hand-written field-by-field compare that would break whenever `ThemeBuilder` gains fields.
+
+### Decision: Applying a theme doesn't change automatic day/night switching
+
+What was decided: `desktop::apply` writes the theme to its dark or light slot and sets `is_dark`, but never touches `auto_switch` in `com.system76.CosmicTheme.Mode`.
+
+Why: That's a desktop-wide preference the user set in COSMIC Settings. Turning it off silently would be surprising.
+
+Rejected: Disabling `auto_switch` on apply so the chosen theme always stays visible.

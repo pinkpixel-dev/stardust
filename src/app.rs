@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::compat::{self, Compat};
-use crate::library::Library;
+use crate::library::{self, Library};
 use crate::{desktop, fl, views};
 use cosmic::app::context_drawer;
+use cosmic::cosmic_theme::{
+    DARK_THEME_BUILDER_ID, LIGHT_THEME_BUILDER_ID, THEME_MODE_ID, ThemeBuilder, ThemeMode,
+};
 use cosmic::dialog::file_chooser::{self, FileFilter};
 use cosmic::iced::keyboard::{self, Key, Modifiers, key::Physical};
 use cosmic::iced::{Length, Subscription, event};
@@ -23,6 +26,8 @@ pub struct AppModel {
     key_binds: HashMap<KeyBind, MenuAction>,
     library: Option<Library>,
     library_error: Option<String>,
+    /// Name of the saved theme that matches what the desktop shows right now.
+    active: Option<String>,
     compat: Compat,
     compat_dismissed: bool,
     toasts: toaster::Toasts<Message>,
@@ -39,6 +44,8 @@ pub enum Message {
     DialogFailed(String),
     CloseToast(toaster::ToastId),
     DismissCompat,
+    Apply(String),
+    DesktopThemeChanged,
     Key(Modifiers, Key, Option<Physical>),
 }
 
@@ -78,11 +85,13 @@ impl cosmic::Application for AppModel {
             key_binds: key_binds(),
             library,
             library_error,
+            active: None,
             compat: compat::check(),
             compat_dismissed: false,
             toasts: toaster::Toasts::new(Message::CloseToast),
         };
 
+        app.refresh_active();
         let command = app.update_title();
         (app, command)
     }
@@ -144,7 +153,7 @@ impl cosmic::Application for AppModel {
         page = page.push(widget::text::title3(fl!("themes")));
 
         page = match (&self.library, &self.library_error) {
-            (Some(library), _) => page.push(views::themes::view(library)),
+            (Some(library), _) => page.push(views::themes::view(library, self.active.as_deref())),
             (None, Some(error)) => page.push(widget::text::body(error.as_str())),
             (None, None) => page,
         };
@@ -153,7 +162,22 @@ impl cosmic::Application for AppModel {
     }
 
     fn subscription(&self) -> Subscription<Self::Message> {
-        event::listen_with(|event, status, _id| match event {
+        // Theme changes made anywhere (Settings, another app, Starcoat itself)
+        // update the checkmark.
+        let watch_dark = self
+            .core()
+            .watch_config::<ThemeBuilder>(DARK_THEME_BUILDER_ID)
+            .map(|_| Message::DesktopThemeChanged);
+        let watch_light = self
+            .core()
+            .watch_config::<ThemeBuilder>(LIGHT_THEME_BUILDER_ID)
+            .map(|_| Message::DesktopThemeChanged);
+        let watch_mode = self
+            .core()
+            .watch_config::<ThemeMode>(THEME_MODE_ID)
+            .map(|_| Message::DesktopThemeChanged);
+
+        let keys = event::listen_with(|event, status, _id| match event {
             cosmic::iced::Event::Keyboard(keyboard::Event::KeyPressed {
                 key,
                 modifiers,
@@ -163,7 +187,9 @@ impl cosmic::Application for AppModel {
                 Some(Message::Key(modifiers, key, Some(physical_key)))
             }
             _ => None,
-        })
+        });
+
+        Subscription::batch([watch_dark, watch_light, watch_mode, keys])
     }
 
     fn update(&mut self, message: Self::Message) -> Task<cosmic::Action<Self::Message>> {
@@ -241,6 +267,10 @@ impl cosmic::Application for AppModel {
 
             Message::DismissCompat => self.compat_dismissed = true,
 
+            Message::Apply(name) => return self.apply(&name),
+
+            Message::DesktopThemeChanged => self.refresh_active(),
+
             Message::Key(modifiers, key, physical_key) => {
                 for (key_bind, action) in &self.key_binds {
                     if key_bind.matches(modifiers, &key, physical_key.as_ref()) {
@@ -262,6 +292,44 @@ impl AppModel {
         }
     }
 
+    fn apply(&mut self, name: &str) -> Task<cosmic::Action<Message>> {
+        // Writing to a config version the desktop doesn't read would do nothing.
+        if let Some(warning) = self.version_mismatch() {
+            return self.toast(warning);
+        }
+
+        let Some(theme) = self
+            .library
+            .as_ref()
+            .and_then(|library| library.themes().iter().find(|theme| theme.name == name))
+        else {
+            return Task::none();
+        };
+
+        match desktop::apply(&theme.builder) {
+            Ok(()) => {
+                self.active = Some(name.to_string());
+                self.toast(fl!("applied", name = name))
+            }
+            Err(err) => self.toast(fl!("apply-failed", name = name, error = format!("{err:?}"))),
+        }
+    }
+
+    fn refresh_active(&mut self) {
+        let current = desktop::current_theme().ok();
+        self.active = self.library.as_ref().and_then(|library| {
+            library
+                .themes()
+                .iter()
+                .find(|theme| {
+                    current
+                        .as_ref()
+                        .is_some_and(|current| library::same_theme(&theme.builder, current))
+                })
+                .map(|theme| theme.name.clone())
+        });
+    }
+
     fn toast(&mut self, message: String) -> Task<cosmic::Action<Message>> {
         self.toasts
             .push(toaster::Toast::new(message))
@@ -272,6 +340,10 @@ impl AppModel {
         if self.compat_dismissed {
             return None;
         }
+        self.version_mismatch()
+    }
+
+    fn version_mismatch(&self) -> Option<String> {
         match self.compat {
             Compat::DesktopNewer { desktop, app } => {
                 Some(fl!("compat-newer", desktop = desktop, app = app))

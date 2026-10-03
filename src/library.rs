@@ -166,6 +166,16 @@ pub fn read_theme(path: &Path) -> Result<ThemeBuilder, LibraryError> {
     ron::from_str(&contents).map_err(LibraryError::Parse)
 }
 
+/// True when two themes would save to the same file. Comparing the saved
+/// form ignores tiny float differences, like an old RGB value such as
+/// `0.99203914` versus the same color after a round trip through hex.
+pub fn same_theme(a: &ThemeBuilder, b: &ThemeBuilder) -> bool {
+    match (ron::to_string(a), ron::to_string(b)) {
+        (Ok(a), Ok(b)) => a == b,
+        _ => false,
+    }
+}
+
 fn ron_files(dir: &Path) -> io::Result<Vec<PathBuf>> {
     let mut files: Vec<PathBuf> = fs::read_dir(dir)?
         .filter_map(Result::ok)
@@ -257,6 +267,21 @@ mod tests {
         let report = library.import_dir(&source).unwrap();
         assert_eq!(report, ImportReport { imported: 1, failed: 1 });
         assert_eq!(library.themes()[0].name, "Midnight");
+    }
+
+    #[test]
+    fn same_theme_ignores_hex_rounding() {
+        let mut exact = ThemeBuilder::dark();
+        exact.bg_color = Some(cosmic::cosmic_theme::palette::Srgba::new(0.99203914, 0.42984885, 0.7296743, 1.0));
+        let ron = ron::to_string(&exact).unwrap();
+        let rounded: ThemeBuilder = ron::from_str(&ron).unwrap();
+
+        assert_ne!(exact, rounded, "hex really does round");
+        assert!(same_theme(&exact, &rounded));
+
+        let mut other = rounded.clone();
+        other.accent = Some(cosmic::cosmic_theme::palette::Srgb::new(0.1, 0.2, 0.3));
+        assert!(!same_theme(&exact, &other));
     }
 
     #[test]

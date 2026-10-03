@@ -2,24 +2,28 @@
 
 //! The theme library page.
 
+use super::preview;
 use crate::app::Message;
 use crate::fl;
 use crate::library::{Library, SavedTheme};
-use cosmic::cosmic_theme::palette::Srgba;
-use cosmic::iced::{Alignment, Background, Border, Color, Length};
+use cosmic::iced::{Alignment, Length};
 use cosmic::prelude::*;
-use cosmic::widget;
+use cosmic::widget::{self, button, tooltip};
 
-const CARD_WIDTH: f32 = 200.0;
+const CARD_WIDTH: f32 = 220.0;
 
-pub fn view(library: &Library) -> Element<'_, Message> {
+pub fn view<'a>(library: &'a Library, active: Option<&str>) -> Element<'a, Message> {
     let spacing = cosmic::theme::spacing();
 
     if library.themes().is_empty() {
         return empty_state();
     }
 
-    let cards = library.themes().iter().map(card).collect();
+    let cards = library
+        .themes()
+        .iter()
+        .map(|theme| card(theme, active == Some(theme.name.as_str())))
+        .collect();
 
     widget::scrollable(
         widget::flex_row(cards)
@@ -46,21 +50,21 @@ fn empty_state<'a>() -> Element<'a, Message> {
     widget::container(content).center(Length::Fill).into()
 }
 
-fn card(theme: &SavedTheme) -> Element<'_, Message> {
+fn card(theme: &SavedTheme, active: bool) -> Element<'_, Message> {
     let spacing = cosmic::theme::spacing();
-    let cosmic = &theme.theme;
-
-    let swatches = widget::row::with_capacity(2)
-        .push(swatch(cosmic.bg_color(), Length::Fill))
-        .push(swatch(cosmic.accent_color(), Length::Fixed(40.0)))
-        .spacing(spacing.space_xxs)
-        .height(48);
 
     let (mode_icon, mode_label) = if theme.is_dark() {
         ("weather-clear-night-symbolic", fl!("dark"))
     } else {
         ("weather-clear-symbolic", fl!("light"))
     };
+
+    let mut title = widget::row::with_capacity(2)
+        .push(widget::text::body(theme.name.as_str()).width(Length::Fill))
+        .align_y(Alignment::Center);
+    if active {
+        title = title.push(widget::icon::from_name("object-select-symbolic").size(16));
+    }
 
     let mode = widget::row::with_capacity(2)
         .push(widget::icon::from_name(mode_icon).size(14))
@@ -69,32 +73,24 @@ fn card(theme: &SavedTheme) -> Element<'_, Message> {
         .align_y(Alignment::Center);
 
     let content = widget::column::with_capacity(3)
-        .push(swatches)
-        .push(widget::text::body(theme.name.as_str()))
+        .push(preview::view(&theme.theme))
+        .push(title)
         .push(mode)
-        .spacing(spacing.space_xs);
+        .spacing(spacing.space_xs)
+        .padding(spacing.space_xs)
+        .width(CARD_WIDTH);
 
-    widget::container(content)
-        .padding(spacing.space_s)
-        .width(CARD_WIDTH)
-        .class(cosmic::theme::Container::Card)
-        .into()
-}
+    let card = button::custom_image_button(content, None)
+        .class(button::ButtonClass::Image)
+        .selected(active)
+        .padding(0)
+        .on_press(Message::Apply(theme.name.clone()));
 
-fn swatch<'a>(color: Srgba, width: Length) -> Element<'a, Message> {
-    let color = Color::from_rgba(color.red, color.green, color.blue, color.alpha);
+    let hint = if active {
+        fl!("active-theme")
+    } else {
+        fl!("apply-theme", name = theme.name.as_str())
+    };
 
-    widget::container(widget::Space::new().width(width).height(Length::Fill))
-        .width(width)
-        .height(Length::Fill)
-        .style(move |_| widget::container::Style {
-            background: Some(Background::Color(color)),
-            border: Border {
-                radius: 8.0.into(),
-                width: 1.0,
-                color: Color::from_rgba(0.5, 0.5, 0.5, 0.35),
-            },
-            ..Default::default()
-        })
-        .into()
+    tooltip(card, widget::text::caption(hint), tooltip::Position::Bottom).into()
 }

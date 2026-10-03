@@ -12,7 +12,7 @@
 - Import one file or a whole folder
 - Check which theme config version the running desktop uses and show one clear message if it doesn't match
 
-## Phase 3: Preview grid
+## Phase 3: Preview grid (done)
 
 - Each card draws a tiny mock COSMIC window from the theme's real colors and corner radii
 - Click or Enter applies the theme, switching dark/light mode if needed

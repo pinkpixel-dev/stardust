@@ -12,7 +12,9 @@
 - Saved themes live in `~/.local/share/starcoat/themes/` as `.ron` files
 - First launch saves your current COSMIC theme as "My Theme"
 - Import theme files (Ctrl+O) or a whole folder (Ctrl+Shift+O), with a toast saying how many worked
-- Theme cards show the background and accent colors plus a dark/light label
+- Theme cards show a small preview window drawn from each theme's colors, corner style, and window hint
+- Click a card (or press Enter on it) to apply the theme. Starcoat switches between dark and light mode when needed
+- A checkmark marks the saved theme that matches your desktop, and it stays in sync when you change themes in COSMIC Settings
 - Warning banner if the installed COSMIC uses a different theme config version than Starcoat
 
 ### 🧹 Maintenance

@@ -25,3 +25,8 @@ library-failed = Couldn't open the theme library: { $error }
 
 compat-newer = Your COSMIC desktop uses theme format v{ $desktop }, but this Starcoat writes v{ $app }. Update Starcoat before applying themes.
 compat-older = Your COSMIC desktop uses theme format v{ $desktop }, but this Starcoat writes v{ $app }. Update COSMIC before applying themes.
+
+apply-theme = Apply { $name }
+active-theme = Current theme
+applied = Applied { $name }
+apply-failed = Couldn't apply { $name }: { $error }
