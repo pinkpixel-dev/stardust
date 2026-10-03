@@ -1,8 +1,8 @@
-<p align="center">
-<img src="resources/icons/hicolor/512x512/apps/dev.pinkpixel.Stardust.png" alt="Stardust icon" width="250">
-</p>
-
 # Stardust
+
+<p align="center">
+<img src="./cover.png" alt="Stardust icon" width="850">
+</p>
 
 Stardust is a COSMIC desktop app for saving, previewing, and switching themes and icon themes.
 
