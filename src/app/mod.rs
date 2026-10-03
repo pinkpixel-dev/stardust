@@ -24,7 +24,8 @@ use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 
 const REPOSITORY: &str = env!("CARGO_PKG_REPOSITORY");
-const APP_ICON: &[u8] = include_bytes!("../../resources/icons/hicolor/scalable/apps/icon.svg");
+const APP_ICON: &[u8] =
+    include_bytes!("../../resources/icons/hicolor/512x512/apps/dev.pinkpixel.Stardust.png");
 
 pub struct AppModel {
     core: cosmic::Core,
@@ -96,7 +97,7 @@ impl cosmic::Application for AppModel {
     ) -> (Self, Task<cosmic::Action<Self::Message>>) {
         let about = About::default()
             .name(fl!("app-title"))
-            .icon(widget::icon::from_svg_bytes(APP_ICON))
+            .icon(widget::icon::from_raster_bytes(APP_ICON))
             .version(env!("CARGO_PKG_VERSION"))
             .author("Pink Pixel")
             .links([(fl!("repository"), REPOSITORY)])

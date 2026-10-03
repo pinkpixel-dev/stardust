@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.3.0 - October 3, 2026
+
+### 🎨 App icon
+
+- New app icon, shown on the About page, in the app library, and in the dock
+- Release builds add the launcher entry and icon to `~/.local/share/` on launch, so Stardust shows up like a normal app after `cargo install`. They're rewritten if they go out of date, and the entry points at the installed binary so it works even when `~/.cargo/bin` isn't on the session's PATH
+
+### 📦 Install
+
+- Prebuilt x86_64 Linux binaries and a `curl | sh` install script, built by cargo-dist on GitHub Releases, so installing no longer needs Rust
+
+### 🧹 Maintenance
+
+- Replaced the old SVG icon with a 512x512 PNG
+
 ## 0.2.0 - October 3, 2026
 
 ### 🖼️ Icon themes

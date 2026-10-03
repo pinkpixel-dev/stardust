@@ -6,6 +6,7 @@ mod desktop;
 mod dialogs;
 mod i18n;
 mod icons;
+mod launcher;
 mod library;
 mod preview_size;
 mod views;
@@ -13,6 +14,7 @@ mod views;
 fn main() -> cosmic::iced::Result {
     let requested_languages = i18n_embed::DesktopLanguageRequester::requested_languages();
     i18n::init(&requested_languages);
+    launcher::install();
 
     let settings = cosmic::app::Settings::default()
         .size(cosmic::iced::Size::new(1024.0, 720.0))
