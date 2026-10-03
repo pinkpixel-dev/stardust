@@ -36,7 +36,7 @@ Pick Small, Medium, or Large cards from the View menu. Stardust remembers your c
 ## Requirements
 
 - The COSMIC desktop (built against COSMIC 1.9, works on 1.7)
-- A recent stable Rust toolchain (I build with 1.96)
+- A recent stable Rust toolchain, only if you install with Cargo or build from source (I build with 1.96)
 - `tar`, if you want to install icon themes from archives
 
 I use it on CachyOS. It should work on Pop!_OS too, since it only touches your user files in `~/.config/cosmic/` and `~/.local/share/`, but I haven't tested it there yet. If you try it on Pop, I'd love to hear how it goes.
