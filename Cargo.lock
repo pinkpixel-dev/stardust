@@ -4437,11 +4437,14 @@ checksum = "6ce2be8dc25455e1f91df71bfa12ad37d7af1092ae736f3a6cd0e37bc7810596"
 name = "starcoat"
 version = "0.1.0"
 dependencies = [
+ "dirs",
  "i18n-embed",
  "i18n-embed-fl",
  "libcosmic",
  "open",
+ "ron",
  "rust-embed",
+ "tempfile",
 ]
 
 [[package]]

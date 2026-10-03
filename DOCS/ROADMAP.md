@@ -5,7 +5,7 @@
 - libcosmic app with header, About drawer, and an empty Themes page
 - Apache-2.0 license, docs, app icon, desktop entry
 
-## Phase 2: Theme library
+## Phase 2: Theme library (done)
 
 - Store themes as `.ron` files in `~/.local/share/starcoat/themes/`
 - Import the current theme on first run

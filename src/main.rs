@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 mod app;
+mod compat;
+mod desktop;
 mod i18n;
+mod library;
+mod views;
 
 fn main() -> cosmic::iced::Result {
     let requested_languages = i18n_embed::DesktopLanguageRequester::requested_languages();
