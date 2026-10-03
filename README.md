@@ -1,4 +1,6 @@
-<img src="resources/icons/hicolor/512x512/apps/dev.pinkpixel.Stardust.png" alt="Stardust icon" width="96">
+<p align="center">
+<img src="resources/icons/hicolor/512x512/apps/dev.pinkpixel.Stardust.png" alt="Stardust icon" width="250">
+</p>
 
 # Stardust
 
