@@ -1,0 +1,29 @@
+[package]
+name = "starcoat"
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+description = "Save, preview, create, and switch COSMIC desktop themes"
+repository = "https://github.com/pinkpixel-dev/starcoat"
+authors = ["Pink Pixel <admin@pinkpixel.dev>"]
+
+[dependencies]
+i18n-embed = { version = "0.16", features = [
+    "fluent-system",
+    "desktop-requester",
+] }
+i18n-embed-fl = "0.10"
+open = "5.3.2"
+rust-embed = "8.8.0"
+
+[dependencies.libcosmic]
+git = "https://github.com/pop-os/libcosmic.git"
+# Pinned to the revision COSMIC epoch 1.9.0 ships (cosmic-settings Cargo.lock),
+# so the theme config format matches the desktop.
+rev = "d77e99fb1555e2728297677de61e23ada4d9d09b"
+features = [
+    "about",
+    "single-instance",
+    "wgpu",
+    "xdg-portal",
+]

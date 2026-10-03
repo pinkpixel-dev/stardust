@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Starcoat
+Comment=Save, preview, create, and switch COSMIC themes
+Type=Application
+Icon=dev.pinkpixel.Starcoat
+Exec=starcoat
+Terminal=false
+StartupNotify=true
+Categories=COSMIC;Settings;DesktopSettings;
+Keywords=COSMIC;theme;color;appearance;
