@@ -3,7 +3,9 @@
 mod app;
 mod compat;
 mod desktop;
+mod dialogs;
 mod i18n;
+mod icons;
 mod library;
 mod preview_size;
 mod views;

@@ -33,3 +33,18 @@ apply-theme = Apply { $name }
 active-theme = Current theme
 applied = Applied { $name }
 apply-failed = Couldn't apply { $name }: { $error }
+
+icons = Icons
+no-icon-themes = No icon themes found
+import-icon-themes = Import Icon Themes…
+import-icon-folder = Import Icon Folder…
+active-icon-theme = Current icon theme
+icons-installed = { $installed ->
+    [one] Installed 1 icon theme
+   *[other] Installed { $installed } icon themes
+}{ $failed ->
+    [0] {""}
+   *[other] , skipped { $failed }
+}
+icons-applied-restart = Applied { $name }. Apps that were already open use it after a restart.
+task-failed = Something went wrong. Check the terminal output for details.

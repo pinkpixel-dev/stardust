@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.2.0 - October 3, 2026
+
+### 🖼️ Icon themes
+
+- New Icons page, reached from the nav sidebar next to Themes
+- Each installed icon theme gets a card with 12 of its real icons (folders, files, and a few apps), sized by the same Small, Medium, and Large setting as theme cards
+- Click a card to set it as COSMIC's icon theme. A checkmark marks the current one and stays in sync with COSMIC Settings
+- File > Import on the Icons page installs `.tar` archives (gz, xz, bz2, zst) or a theme folder into `~/.local/share/icons/`. Packs with several themes inside get every theme installed
+- Cursor-only themes and hidden themes are left out of the grid
+
+### 🧹 Maintenance
+
+- File picker helpers moved out of the app module so both pages can share them
+
 ## 0.1.0 - October 3, 2026
 
 ### 🎨 App

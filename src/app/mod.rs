@@ -1,30 +1,37 @@
 // SPDX-License-Identifier: Apache-2.0
 
+mod icon_page;
+mod menu;
+
 use crate::compat::{self, Compat};
+use crate::dialogs::{self, file_name};
+use crate::icons::{self, IconTheme, InstallReport};
 use crate::library::{self, Library};
 use crate::preview_size::PreviewSize;
 use crate::{desktop, fl, views};
 use cosmic::app::context_drawer;
+use cosmic::config::CosmicTk;
 use cosmic::cosmic_theme::{
     DARK_THEME_BUILDER_ID, LIGHT_THEME_BUILDER_ID, THEME_MODE_ID, ThemeBuilder, ThemeMode,
 };
-use cosmic::dialog::file_chooser::{self, FileFilter};
+use cosmic::dialog::file_chooser::FileFilter;
 use cosmic::iced::keyboard::{self, Key, Modifiers, key::Physical};
 use cosmic::iced::{Length, Subscription, event};
 use cosmic::prelude::*;
-use cosmic::widget::menu::{self, KeyBind, key_bind::Modifier};
-use cosmic::widget::{self, about::About, toaster};
-use std::collections::HashMap;
+use cosmic::widget::menu::{KeyBind, action::MenuAction as _};
+use cosmic::widget::{self, about::About, nav_bar, toaster};
+use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 
 const REPOSITORY: &str = env!("CARGO_PKG_REPOSITORY");
-const APP_ICON: &[u8] = include_bytes!("../resources/icons/hicolor/scalable/apps/icon.svg");
+const APP_ICON: &[u8] = include_bytes!("../../resources/icons/hicolor/scalable/apps/icon.svg");
 
 pub struct AppModel {
     core: cosmic::Core,
     context_page: ContextPage,
     about: About,
-    key_binds: HashMap<KeyBind, MenuAction>,
+    key_binds: HashMap<KeyBind, menu::MenuAction>,
+    nav: nav_bar::Model,
     library: Option<Library>,
     library_error: Option<String>,
     /// Name of the saved theme that matches what the desktop shows right now.
@@ -32,6 +39,13 @@ pub struct AppModel {
     compat: Compat,
     compat_dismissed: bool,
     preview_size: PreviewSize,
+    /// `None` until the first scan finishes.
+    icon_themes: Option<Vec<IconTheme>>,
+    /// Folder name of the icon theme COSMIC is set to.
+    active_icons: Option<String>,
+    /// Icon themes imported since Stardust started. Apps that were already
+    /// running can't see them until they restart.
+    imported_icons: HashSet<String>,
     toasts: toaster::Toasts<Message>,
 }
 
@@ -51,6 +65,13 @@ pub enum Message {
     ShrinkPreviews,
     Apply(String),
     DesktopThemeChanged,
+    IconThemesLoaded(Vec<IconTheme>),
+    ApplyIcons(String),
+    IconThemeChanged,
+    IconArchivesChosen(Vec<PathBuf>),
+    IconFolderChosen(PathBuf),
+    IconsInstalled(InstallReport),
+    TaskFailed,
     Key(Modifiers, Key, Option<Physical>),
 }
 
@@ -87,51 +108,36 @@ impl cosmic::Application for AppModel {
             core,
             context_page: ContextPage::default(),
             about,
-            key_binds: key_binds(),
+            key_binds: menu::key_binds(),
+            nav: icon_page::nav_model(),
             library,
             library_error,
             active: None,
             compat: compat::check(),
             compat_dismissed: false,
             preview_size: PreviewSize::load(Self::APP_ID),
+            icon_themes: None,
+            active_icons: icons::current().ok(),
+            imported_icons: HashSet::new(),
             toasts: toaster::Toasts::new(Message::CloseToast),
         };
 
         app.refresh_active();
-        let command = app.update_title();
+        let command = Task::batch([app.update_title(), icon_page::scan_icon_themes()]);
         (app, command)
     }
 
-    fn header_start(&self) -> Vec<Element<'_, Self::Message>> {
-        let menu_bar = menu::bar(vec![
-            menu::Tree::with_children(
-                menu::root(fl!("file")).apply(Element::from),
-                menu::items(
-                    &self.key_binds,
-                    vec![
-                        menu::Item::Button(fl!("import-themes"), None, MenuAction::ImportFiles),
-                        menu::Item::Button(fl!("import-folder"), None, MenuAction::ImportFolder),
-                    ],
-                ),
-            ),
-            menu::Tree::with_children(
-                menu::root(fl!("view")).apply(Element::from),
-                menu::items(
-                    &self.key_binds,
-                    vec![
-                        size_item(fl!("size-small"), PreviewSize::Small, self.preview_size),
-                        size_item(fl!("size-medium"), PreviewSize::Medium, self.preview_size),
-                        size_item(fl!("size-large"), PreviewSize::Large, self.preview_size),
-                        menu::Item::Divider,
-                        menu::Item::Button(fl!("about"), None, MenuAction::About),
-                    ],
-                ),
-            ),
-        ])
-        // The default 150px clips labels plus shortcuts, especially in wider fonts.
-        .item_width(menu::ItemWidth::Uniform(260));
+    fn nav_model(&self) -> Option<&nav_bar::Model> {
+        Some(&self.nav)
+    }
 
-        vec![menu_bar.into()]
+    fn on_nav_select(&mut self, id: nav_bar::Id) -> Task<cosmic::Action<Self::Message>> {
+        self.nav.activate(id);
+        Task::none()
+    }
+
+    fn header_start(&self) -> Vec<Element<'_, Self::Message>> {
+        vec![menu::bar(self)]
     }
 
     fn context_drawer(&self) -> Option<context_drawer::ContextDrawer<'_, Self::Message>> {
@@ -156,6 +162,19 @@ impl cosmic::Application for AppModel {
             .width(Length::Fill)
             .height(Length::Fill);
 
+        if self.page() == Page::Icons {
+            page = page.push(widget::text::title3(fl!("icons")));
+            if let Some(themes) = &self.icon_themes {
+                page = page.push(views::icons::view(
+                    themes,
+                    self.active_icons.as_deref(),
+                    self.preview_size,
+                ));
+            }
+            return toaster::toaster(&self.toasts, page);
+        }
+
+        // The version warning is about color themes, so it stays on this page.
         if let Some(warning) = self.compat_warning() {
             page = page.push(
                 widget::warning(warning)
@@ -194,6 +213,10 @@ impl cosmic::Application for AppModel {
             .core()
             .watch_config::<ThemeMode>(THEME_MODE_ID)
             .map(|_| Message::DesktopThemeChanged);
+        let watch_icons = self
+            .core()
+            .watch_config::<CosmicTk>(cosmic::config::ID)
+            .map(|_| Message::IconThemeChanged);
 
         let keys = event::listen_with(|event, status, _id| match event {
             cosmic::iced::Event::Keyboard(keyboard::Event::KeyPressed {
@@ -207,7 +230,7 @@ impl cosmic::Application for AppModel {
             _ => None,
         });
 
-        Subscription::batch([watch_dark, watch_light, watch_mode, keys])
+        Subscription::batch([watch_dark, watch_light, watch_mode, watch_icons, keys])
     }
 
     fn update(&mut self, message: Self::Message) -> Task<cosmic::Action<Self::Message>> {
@@ -227,8 +250,30 @@ impl cosmic::Application for AppModel {
                 }
             }
 
-            Message::ImportFiles => return pick_files(),
-            Message::ImportFolder => return pick_folder(),
+            Message::ImportFiles => {
+                return match self.page() {
+                    Page::Themes => dialogs::pick_files(
+                        fl!("import-themes"),
+                        FileFilter::new("COSMIC themes").glob("*.ron"),
+                        Message::FilesChosen,
+                    ),
+                    Page::Icons => dialogs::pick_files(
+                        fl!("import-icon-themes"),
+                        icon_page::icon_archive_filter(),
+                        Message::IconArchivesChosen,
+                    ),
+                };
+            }
+            Message::ImportFolder => {
+                return match self.page() {
+                    Page::Themes => {
+                        dialogs::pick_folder(fl!("import-folder"), Message::FolderChosen)
+                    }
+                    Page::Icons => {
+                        dialogs::pick_folder(fl!("import-icon-folder"), Message::IconFolderChosen)
+                    }
+                };
+            }
 
             Message::FilesChosen(paths) => {
                 let Some(library) = self.library.as_mut() else {
@@ -293,10 +338,19 @@ impl cosmic::Application for AppModel {
 
             Message::DesktopThemeChanged => self.refresh_active(),
 
+            Message::IconThemesLoaded(_)
+            | Message::ApplyIcons(_)
+            | Message::IconThemeChanged
+            | Message::IconArchivesChosen(_)
+            | Message::IconFolderChosen(_)
+            | Message::IconsInstalled(_) => return self.update_icons(message),
+
+            Message::TaskFailed => return self.toast(fl!("task-failed")),
+
             Message::Key(modifiers, key, physical_key) => {
                 for (key_bind, action) in &self.key_binds {
                     if key_bind.matches(modifiers, &key, physical_key.as_ref()) {
-                        return self.update(menu::action::MenuAction::message(action));
+                        return self.update(action.message());
                     }
                 }
             }
@@ -306,6 +360,10 @@ impl cosmic::Application for AppModel {
 }
 
 impl AppModel {
+    fn page(&self) -> Page {
+        self.nav.active_data::<Page>().copied().unwrap_or_default()
+    }
+
     fn set_preview_size(&mut self, size: PreviewSize) {
         if size != self.preview_size {
             self.preview_size = size;
@@ -410,115 +468,15 @@ fn open_library() -> (Option<Library>, Option<String>) {
     }
 }
 
-fn pick_files() -> Task<cosmic::Action<Message>> {
-    cosmic::task::future(async {
-        let dialog = file_chooser::open::Dialog::new()
-            .title(fl!("import-themes"))
-            .filter(FileFilter::new("COSMIC themes").glob("*.ron"));
-
-        match dialog.open_files().await {
-            Ok(response) => Message::FilesChosen(
-                response
-                    .urls()
-                    .iter()
-                    .filter_map(|url| url.to_file_path().ok())
-                    .collect(),
-            ),
-            Err(file_chooser::Error::Cancelled) => Message::FilesChosen(Vec::new()),
-            Err(why) => Message::DialogFailed(why.to_string()),
-        }
-    })
-}
-
-fn pick_folder() -> Task<cosmic::Action<Message>> {
-    cosmic::task::future(async {
-        let dialog = file_chooser::open::Dialog::new().title(fl!("import-folder"));
-
-        match dialog.open_folder().await {
-            Ok(response) => match response.url().to_file_path() {
-                Ok(path) => Message::FolderChosen(path),
-                Err(()) => Message::DialogFailed("not a local folder".to_string()),
-            },
-            Err(file_chooser::Error::Cancelled) => Message::FilesChosen(Vec::new()),
-            Err(why) => Message::DialogFailed(why.to_string()),
-        }
-    })
-}
-
-fn file_name(path: &std::path::Path) -> String {
-    path.file_name()
-        .map(|name| name.to_string_lossy().into_owned())
-        .unwrap_or_else(|| path.display().to_string())
-}
-
-fn key_binds() -> HashMap<KeyBind, MenuAction> {
-    HashMap::from([
-        (
-            KeyBind {
-                modifiers: vec![Modifier::Ctrl],
-                key: Key::Character("o".into()),
-            },
-            MenuAction::ImportFiles,
-        ),
-        (
-            KeyBind {
-                modifiers: vec![Modifier::Ctrl, Modifier::Shift],
-                key: Key::Character("o".into()),
-            },
-            MenuAction::ImportFolder,
-        ),
-        (
-            KeyBind {
-                modifiers: vec![Modifier::Ctrl],
-                key: Key::Character("=".into()),
-            },
-            MenuAction::GrowPreviews,
-        ),
-        (
-            KeyBind {
-                modifiers: vec![Modifier::Ctrl],
-                key: Key::Character("-".into()),
-            },
-            MenuAction::ShrinkPreviews,
-        ),
-    ])
-}
-
-fn size_item(
-    label: String,
-    size: PreviewSize,
-    current: PreviewSize,
-) -> menu::Item<MenuAction, String> {
-    menu::Item::CheckBox(label, None, size == current, MenuAction::PreviewSize(size))
+#[derive(Copy, Clone, Debug, Default, Eq, PartialEq)]
+pub enum Page {
+    #[default]
+    Themes,
+    Icons,
 }
 
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq)]
 pub enum ContextPage {
     #[default]
     About,
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum MenuAction {
-    About,
-    ImportFiles,
-    ImportFolder,
-    PreviewSize(PreviewSize),
-    GrowPreviews,
-    ShrinkPreviews,
-}
-
-impl menu::action::MenuAction for MenuAction {
-    type Message = Message;
-
-    fn message(&self) -> Self::Message {
-        match self {
-            MenuAction::About => Message::ToggleContextPage(ContextPage::About),
-            MenuAction::ImportFiles => Message::ImportFiles,
-            MenuAction::ImportFolder => Message::ImportFolder,
-            MenuAction::PreviewSize(size) => Message::SetPreviewSize(*size),
-            MenuAction::GrowPreviews => Message::GrowPreviews,
-            MenuAction::ShrinkPreviews => Message::ShrinkPreviews,
-        }
-    }
 }

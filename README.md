@@ -11,6 +11,7 @@ I made it because switching themes in COSMIC means exporting a `.ron` file and p
 - A library of your saved themes, with previews drawn from each theme's real colors
 - Apply a theme with one click (Stardust switches dark/light mode for you)
 - Import existing `.ron` theme files
+- Browse your icon themes with big previews, apply one with a click, and install new ones from archives or folders
 - Create a new theme in the app and save it
 
 ## Requirements
