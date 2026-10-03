@@ -1,6 +1,6 @@
-# Starcoat Overview
+# Stardust Overview
 
-Starcoat is a native COSMIC desktop app for saving, previewing, creating, and switching themes. The goal is to replace the "export a `.ron` file, then pick it again in Settings every time" routine with a grid of theme previews you can apply with one click.
+Stardust is a native COSMIC desktop app for saving, previewing, creating, and switching themes. The goal is to replace the "export a `.ron` file, then pick it again in Settings every time" routine with a grid of theme previews you can apply with one click.
 
 This document describes how the project works right now. It is present tense. Decisions and their reasoning live in `MEMORY.md`. Release history lives in `CHANGELOG.md`.
 
@@ -8,26 +8,26 @@ This document describes how the project works right now. It is present tense. De
 
 - Rust (edition 2024)
 - [libcosmic](https://github.com/pop-os/libcosmic), pinned to rev `d77e99fb1555e2728297677de61e23ada4d9d09b` (the revision COSMIC epoch 1.9.0 ships)
-- `i18n-embed` + Fluent for UI strings (`i18n/en/starcoat.ftl`)
+- `i18n-embed` + Fluent for UI strings (`i18n/en/stardust.ftl`)
 - `ron` for reading and writing theme files, `dirs` for the data folder
 - `tempfile` for tests
 
 ## Current State
 
-Starcoat has a working theme library with previews. Each saved theme shows as a card with a tiny COSMIC window drawn from its colors, and clicking a card applies it to the desktop. Theme files and whole folders can be imported. The editor isn't built yet. See `ROADMAP.md`.
+Stardust has a working theme library with previews. Each saved theme shows as a card with a tiny COSMIC window drawn from its colors, and clicking a card applies it to the desktop. Theme files and whole folders can be imported. The editor isn't built yet. See `ROADMAP.md`.
 
 ## Core Flow
 
 1. On startup, `compat::check()` compares the highest `v<N>` folder in `<XDG data dir>/cosmic/com.system76.CosmicTheme.Dark.Builder/` (installed by the COSMIC packages) with `ThemeBuilder::VERSION`. If they differ, a dismissible warning banner explains which side needs updating.
-2. `Library::open` reads every `.ron` file in `~/.local/share/starcoat/themes/`. Files that don't parse as a `ThemeBuilder` are skipped and left on disk.
+2. `Library::open` reads every `.ron` file in `~/.local/share/stardust/themes/`. Files that don't parse as a `ThemeBuilder` are skipped and left on disk.
 3. On first run (the folder didn't exist yet), `desktop::current_theme()` reads the live theme for the current dark/light mode and saves it as "My Theme".
 4. File > Import Themes… (Ctrl+O) and File > Import Folder… (Ctrl+Shift+O) open the XDG portal file picker. Imports are copied into the library, and a toast reports how many worked.
 5. Clicking a card (or focusing it and pressing Enter) calls `desktop::apply`. If the version check found a mismatch, it shows the warning as a toast instead of writing anything.
-6. Starcoat watches the dark builder, light builder, and mode configs. Any change, from Starcoat or from COSMIC Settings, re-runs `refresh_active`, which puts the checkmark on the saved theme that matches the desktop.
+6. Stardust watches the dark builder, light builder, and mode configs. Any change, from Stardust or from COSMIC Settings, re-runs `refresh_active`, which puts the checkmark on the saved theme that matches the desktop.
 
 ## Theme Library
 
-- One file per theme: `~/.local/share/starcoat/themes/<name>.ron`. The file name is the theme name. There's no separate metadata file.
+- One file per theme: `~/.local/share/stardust/themes/<name>.ron`. The file name is the theme name. There's no separate metadata file.
 - Names that are already taken (case-insensitive) get " 2", " 3", and so on. `/`, control characters, and leading dots are stripped.
 - Files are written with `ron::ser::to_string_pretty`, the same way COSMIC Settings exports them, so a library file can be imported back into Settings.
 - Each `SavedTheme` keeps the parsed `ThemeBuilder` plus the full `Theme` from `builder.build()`, which the views use for colors.
@@ -47,7 +47,7 @@ It doesn't touch `auto_switch`. If automatic day/night switching is on, COSMIC c
 
 `views/preview.rs` draws a small window: a title bar, a sidebar using the secondary container color with one accent-tinted selected item, and a content area using the primary container color with text bars and an accent button. The border is the window hint color (or the accent if none is set). Corner radii come from the theme's `radius_m`, `radius_s`, and `radius_xl`, scaled by 0.4.
 
-Cards come in three sizes. `PreviewSize` in `preview_size.rs` maps Small, Medium, and Large to a scale of 1.3, 1.6, and 2.0. At a scale of 1.0 a card is 220px wide with a 116px preview, and everything in the preview (bars, padding, spacing, radii) is multiplied by the scale so the bigger sizes don't just look emptier. The View menu has a checkbox item for each size, and Ctrl+= and Ctrl+- step up and down. Medium is the default. The choice is saved as a string under the `preview_size` key in Starcoat's own cosmic-config (`~/.config/cosmic/dev.pinkpixel.Starcoat/v1/`).
+Cards come in three sizes. `PreviewSize` in `preview_size.rs` maps Small, Medium, and Large to a scale of 1.3, 1.6, and 2.0. At a scale of 1.0 a card is 220px wide with a 116px preview, and everything in the preview (bars, padding, spacing, radii) is multiplied by the scale so the bigger sizes don't just look emptier. The View menu has a checkbox item for each size, and Ctrl+= and Ctrl+- step up and down. Medium is the default. The choice is saved as a string under the `preview_size` key in Stardust's own cosmic-config (`~/.config/cosmic/dev.pinkpixel.Stardust/v1/`).
 
 The card grid is a `flex_row` wrapped in a single `column` inside the scrollable. Without that column, the scrollable's viewport height reaches each card as a minimum height and every card stretches to fill the window.
 
@@ -82,13 +82,13 @@ src/
   preview_size.rs  card size setting and its saved config (with tests)
   views/themes.rs  theme card grid and empty state
   views/preview.rs mini window preview drawn from a Theme
-i18n/en/starcoat.ftl          UI strings
+i18n/en/stardust.ftl          UI strings
 resources/
-  dev.pinkpixel.Starcoat.desktop
+  dev.pinkpixel.Stardust.desktop
   icons/hicolor/scalable/apps/icon.svg
 ```
 
-App ID: `dev.pinkpixel.Starcoat`
+App ID: `dev.pinkpixel.Stardust`
 
 Project documentation lives in `/DOCS`.
 

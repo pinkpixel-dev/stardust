@@ -1,9 +1,9 @@
 [Desktop Entry]
-Name=Starcoat
+Name=Stardust
 Comment=Save, preview, create, and switch COSMIC themes
 Type=Application
-Icon=dev.pinkpixel.Starcoat
-Exec=starcoat
+Icon=dev.pinkpixel.Stardust
+Exec=stardust
 Terminal=false
 StartupNotify=true
 Categories=COSMIC;Settings;DesktopSettings;

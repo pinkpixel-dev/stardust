@@ -59,7 +59,7 @@ impl cosmic::Application for AppModel {
     type Flags = ();
     type Message = Message;
 
-    const APP_ID: &'static str = "dev.pinkpixel.Starcoat";
+    const APP_ID: &'static str = "dev.pinkpixel.Stardust";
 
     fn core(&self) -> &cosmic::Core {
         &self.core
@@ -180,7 +180,7 @@ impl cosmic::Application for AppModel {
     }
 
     fn subscription(&self) -> Subscription<Self::Message> {
-        // Theme changes made anywhere (Settings, another app, Starcoat itself)
+        // Theme changes made anywhere (Settings, another app, Stardust itself)
         // update the checkmark.
         let watch_dark = self
             .core()

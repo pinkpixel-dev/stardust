@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Checks that the installed COSMIC desktop uses the same theme config
-//! version Starcoat was built for. If they differ, applied themes would be
+//! version Stardust was built for. If they differ, applied themes would be
 //! written to a folder the desktop never reads.
 
 use cosmic::cosmic_config::CosmicConfigEntry;

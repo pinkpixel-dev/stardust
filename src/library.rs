@@ -70,9 +70,9 @@ pub struct Library {
 }
 
 impl Library {
-    /// `~/.local/share/starcoat/themes`
+    /// `~/.local/share/stardust/themes`
     pub fn default_dir() -> Option<PathBuf> {
-        dirs::data_dir().map(|dir| dir.join("starcoat").join("themes"))
+        dirs::data_dir().map(|dir| dir.join("stardust").join("themes"))
     }
 
     /// Opens the library folder, creating it if needed. Returns the library

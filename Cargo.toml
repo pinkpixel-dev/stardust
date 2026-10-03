@@ -1,10 +1,10 @@
 [package]
-name = "starcoat"
+name = "stardust"
 version = "0.1.0"
 edition = "2024"
 license = "Apache-2.0"
 description = "Save, preview, create, and switch COSMIC desktop themes"
-repository = "https://github.com/pinkpixel-dev/starcoat"
+repository = "https://github.com/pinkpixel-dev/stardust"
 authors = ["Pink Pixel <admin@pinkpixel.dev>"]
 
 [dependencies]

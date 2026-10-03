@@ -7,7 +7,7 @@
 
 ## Phase 2: Theme library (done)
 
-- Store themes as `.ron` files in `~/.local/share/starcoat/themes/`
+- Store themes as `.ron` files in `~/.local/share/stardust/themes/`
 - Import the current theme on first run
 - Import one file or a whole folder
 - Check which theme config version the running desktop uses and show one clear message if it doesn't match
@@ -28,7 +28,7 @@
 ## Phase 5: Polish
 
 - Rename, delete (with confirm), export
-- `starcoat --install-desktop` to add the launcher entry and icon after `cargo install`
+- `stardust --install-desktop` to add the launcher entry and icon after `cargo install`
 - Full keyboard navigation and tooltips
 - Test on Pop!_OS
 

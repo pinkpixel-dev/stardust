@@ -10,13 +10,13 @@ Log a decision when a real fork in the road existed, the reason is not visible i
 
 What was decided: `Cargo.toml` pins `libcosmic` to rev `d77e99fb1555e2728297677de61e23ada4d9d09b`, taken from `Cargo.lock` in `cosmic-settings` at tag `epoch-1.9.0`.
 
-Why: The theme config format is versioned (`v1`, `v2` folders). If Starcoat writes a different version than the running desktop reads, applying a theme silently does nothing. Pop!_OS usually gets COSMIC updates before CachyOS, so tracking the newest stable epoch keeps Starcoat matched to Pop while still working on CachyOS 1.7.0 (both use `v2`). When a new COSMIC epoch ships, bump the rev to match it.
+Why: The theme config format is versioned (`v1`, `v2` folders). If Stardust writes a different version than the running desktop reads, applying a theme silently does nothing. Pop!_OS usually gets COSMIC updates before CachyOS, so tracking the newest stable epoch keeps Stardust matched to Pop while still working on CachyOS 1.7.0 (both use `v2`). When a new COSMIC epoch ships, bump the rev to match it.
 
 Rejected: Tracking libcosmic `master`, which can change the config format before any distro ships it. Using libcosmic's `v0.x` git tags, which are old and don't line up with COSMIC epoch releases.
 
 ### Decision: Install from git, not crates.io
 
-What was decided: The install path is `cargo install --git https://github.com/pinkpixel-dev/starcoat`.
+What was decided: The install path is `cargo install --git https://github.com/pinkpixel-dev/stardust`.
 
 Why: crates.io doesn't allow git dependencies, and libcosmic, `cosmic-theme`, and `cosmic-config` aren't published there. `cargo publish` can't work until that changes.
 
@@ -24,9 +24,9 @@ Rejected: Publishing to crates.io (blocked by the above). Vendoring libcosmic in
 
 ### Decision: Write our own apply logic instead of copying COSMIC Settings
 
-What was decided: Starcoat applies themes using public `cosmic-theme` APIs (`ThemeBuilder`, `build()`, `write_entry`) with its own code.
+What was decided: Stardust applies themes using public `cosmic-theme` APIs (`ThemeBuilder`, `build()`, `write_entry`) with its own code.
 
-Why: Starcoat is Apache-2.0. libcosmic is MPL-2.0, which is fine to depend on. `cosmic-settings` is GPL-3.0, so copying its `theme_manager.rs` code would force the whole project to GPL.
+Why: Stardust is Apache-2.0. libcosmic is MPL-2.0, which is fine to depend on. `cosmic-settings` is GPL-3.0, so copying its `theme_manager.rs` code would force the whole project to GPL.
 
 Rejected: Copying the `Manager` code from `cosmic-settings/src/pages/desktop/appearance/theme_manager.rs`.
 
@@ -53,3 +53,11 @@ What was decided: `desktop::apply` writes the theme to its dark or light slot an
 Why: That's a desktop-wide preference the user set in COSMIC Settings. Turning it off silently would be surprising.
 
 Rejected: Disabling `auto_switch` on apply so the chosen theme always stays visible.
+
+### Decision: Rename Starcoat to Stardust with no data migration
+
+What was decided: The app was renamed from Starcoat to Stardust everywhere, including the crate, binary, app ID (`dev.pinkpixel.Stardust`), themes folder (`~/.local/share/stardust/themes/`), and repo URL. Nothing copies data over from the old `starcoat` paths.
+
+Why: The app hadn't had a release yet, so the only saved themes under the old name were on dev machines. Moving them by hand is quick, and migration code would stick around forever for a name that never shipped.
+
+Rejected: A first-launch migration from `~/.local/share/starcoat/themes/`. Renaming only the visible name and keeping `starcoat` internally, which would leave the paths and app ID out of sync with the name.

@@ -1,4 +1,4 @@
-app-title = Starcoat
+app-title = Stardust
 app-comment = Save, preview, create, and switch COSMIC themes
 about = About
 repository = Repository
@@ -26,8 +26,8 @@ import-failed = Couldn't import { $name }: { $error }
 dialog-failed = Couldn't open the file picker: { $error }
 library-failed = Couldn't open the theme library: { $error }
 
-compat-newer = Your COSMIC desktop uses theme format v{ $desktop }, but this Starcoat writes v{ $app }. Update Starcoat before applying themes.
-compat-older = Your COSMIC desktop uses theme format v{ $desktop }, but this Starcoat writes v{ $app }. Update COSMIC before applying themes.
+compat-newer = Your COSMIC desktop uses theme format v{ $desktop }, but this Stardust writes v{ $app }. Update Stardust before applying themes.
+compat-older = Your COSMIC desktop uses theme format v{ $desktop }, but this Stardust writes v{ $app }. Update COSMIC before applying themes.
 
 apply-theme = Apply { $name }
 active-theme = Current theme
