@@ -2,6 +2,7 @@
 
 use crate::compat::{self, Compat};
 use crate::library::{self, Library};
+use crate::preview_size::PreviewSize;
 use crate::{desktop, fl, views};
 use cosmic::app::context_drawer;
 use cosmic::cosmic_theme::{
@@ -30,6 +31,7 @@ pub struct AppModel {
     active: Option<String>,
     compat: Compat,
     compat_dismissed: bool,
+    preview_size: PreviewSize,
     toasts: toaster::Toasts<Message>,
 }
 
@@ -44,6 +46,9 @@ pub enum Message {
     DialogFailed(String),
     CloseToast(toaster::ToastId),
     DismissCompat,
+    SetPreviewSize(PreviewSize),
+    GrowPreviews,
+    ShrinkPreviews,
     Apply(String),
     DesktopThemeChanged,
     Key(Modifiers, Key, Option<Physical>),
@@ -88,6 +93,7 @@ impl cosmic::Application for AppModel {
             active: None,
             compat: compat::check(),
             compat_dismissed: false,
+            preview_size: PreviewSize::load(Self::APP_ID),
             toasts: toaster::Toasts::new(Message::CloseToast),
         };
 
@@ -112,7 +118,13 @@ impl cosmic::Application for AppModel {
                 menu::root(fl!("view")).apply(Element::from),
                 menu::items(
                     &self.key_binds,
-                    vec![menu::Item::Button(fl!("about"), None, MenuAction::About)],
+                    vec![
+                        size_item(fl!("size-small"), PreviewSize::Small, self.preview_size),
+                        size_item(fl!("size-medium"), PreviewSize::Medium, self.preview_size),
+                        size_item(fl!("size-large"), PreviewSize::Large, self.preview_size),
+                        menu::Item::Divider,
+                        menu::Item::Button(fl!("about"), None, MenuAction::About),
+                    ],
                 ),
             ),
         ])
@@ -155,7 +167,11 @@ impl cosmic::Application for AppModel {
         page = page.push(widget::text::title3(fl!("themes")));
 
         page = match (&self.library, &self.library_error) {
-            (Some(library), _) => page.push(views::themes::view(library, self.active.as_deref())),
+            (Some(library), _) => page.push(views::themes::view(
+                library,
+                self.active.as_deref(),
+                self.preview_size,
+            )),
             (None, Some(error)) => page.push(widget::text::body(error.as_str())),
             (None, None) => page,
         };
@@ -269,6 +285,10 @@ impl cosmic::Application for AppModel {
 
             Message::DismissCompat => self.compat_dismissed = true,
 
+            Message::SetPreviewSize(size) => self.set_preview_size(size),
+            Message::GrowPreviews => self.set_preview_size(self.preview_size.larger()),
+            Message::ShrinkPreviews => self.set_preview_size(self.preview_size.smaller()),
+
             Message::Apply(name) => return self.apply(&name),
 
             Message::DesktopThemeChanged => self.refresh_active(),
@@ -286,6 +306,13 @@ impl cosmic::Application for AppModel {
 }
 
 impl AppModel {
+    fn set_preview_size(&mut self, size: PreviewSize) {
+        if size != self.preview_size {
+            self.preview_size = size;
+            size.save(<Self as cosmic::Application>::APP_ID);
+        }
+    }
+
     pub fn update_title(&mut self) -> Task<cosmic::Action<Message>> {
         if let Some(id) = self.core.main_window_id() {
             self.set_window_title(fl!("app-title"), id)
@@ -440,7 +467,29 @@ fn key_binds() -> HashMap<KeyBind, MenuAction> {
             },
             MenuAction::ImportFolder,
         ),
+        (
+            KeyBind {
+                modifiers: vec![Modifier::Ctrl],
+                key: Key::Character("=".into()),
+            },
+            MenuAction::GrowPreviews,
+        ),
+        (
+            KeyBind {
+                modifiers: vec![Modifier::Ctrl],
+                key: Key::Character("-".into()),
+            },
+            MenuAction::ShrinkPreviews,
+        ),
     ])
+}
+
+fn size_item(
+    label: String,
+    size: PreviewSize,
+    current: PreviewSize,
+) -> menu::Item<MenuAction, String> {
+    menu::Item::CheckBox(label, None, size == current, MenuAction::PreviewSize(size))
 }
 
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq)]
@@ -454,6 +503,9 @@ pub enum MenuAction {
     About,
     ImportFiles,
     ImportFolder,
+    PreviewSize(PreviewSize),
+    GrowPreviews,
+    ShrinkPreviews,
 }
 
 impl menu::action::MenuAction for MenuAction {
@@ -464,6 +516,9 @@ impl menu::action::MenuAction for MenuAction {
             MenuAction::About => Message::ToggleContextPage(ContextPage::About),
             MenuAction::ImportFiles => Message::ImportFiles,
             MenuAction::ImportFolder => Message::ImportFolder,
+            MenuAction::PreviewSize(size) => Message::SetPreviewSize(*size),
+            MenuAction::GrowPreviews => Message::GrowPreviews,
+            MenuAction::ShrinkPreviews => Message::ShrinkPreviews,
         }
     }
 }

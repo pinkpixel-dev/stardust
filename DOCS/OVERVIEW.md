@@ -47,6 +47,10 @@ It doesn't touch `auto_switch`. If automatic day/night switching is on, COSMIC c
 
 `views/preview.rs` draws a small window: a title bar, a sidebar using the secondary container color with one accent-tinted selected item, and a content area using the primary container color with text bars and an accent button. The border is the window hint color (or the accent if none is set). Corner radii come from the theme's `radius_m`, `radius_s`, and `radius_xl`, scaled by 0.4.
 
+Cards come in three sizes. `PreviewSize` in `preview_size.rs` maps Small, Medium, and Large to a scale of 1.0, 1.3, and 1.6. Small is the original 220px card with a 116px preview, and everything in the preview (bars, padding, spacing, radii) is multiplied by the scale so the bigger sizes don't just look emptier. The View menu has a checkbox item for each size, and Ctrl+= and Ctrl+- step up and down. Medium is the default. The choice is saved as a string under the `preview_size` key in Starcoat's own cosmic-config (`~/.config/cosmic/dev.pinkpixel.Starcoat/v1/`).
+
+The card grid is a `flex_row` wrapped in a single `column` inside the scrollable. Without that column, the scrollable's viewport height reaches each card as a minimum height and every card stretches to fill the window.
+
 ## How COSMIC Themes Work
 
 This is the part the app is built around, so it's worth writing down.
@@ -70,11 +74,12 @@ The `v2` folder name is the config format version (`#[version = 2]` on `ThemeBui
 ```text
 src/
   main.rs          app entry, window settings
-  app.rs           app model, menus, key binds, import dialogs, toasts
+  app.rs           app model, menus, key binds, import dialogs, toasts, preview size
   library.rs       theme library: load, save, import, naming (with tests)
   compat.rs        desktop theme config version check (with tests)
   desktop.rs       reads and applies the desktop theme (with tests)
   i18n.rs          Fluent localization loader and fl! macro
+  preview_size.rs  card size setting and its saved config (with tests)
   views/themes.rs  theme card grid and empty state
   views/preview.rs mini window preview drawn from a Theme
 i18n/en/starcoat.ftl          UI strings

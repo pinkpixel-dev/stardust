@@ -6,13 +6,19 @@ use super::preview;
 use crate::app::Message;
 use crate::fl;
 use crate::library::{Library, SavedTheme};
+use crate::preview_size::PreviewSize;
 use cosmic::iced::{Alignment, Length};
 use cosmic::prelude::*;
 use cosmic::widget::{self, button, tooltip};
 
+/// Card width at the small size.
 const CARD_WIDTH: f32 = 220.0;
 
-pub fn view<'a>(library: &'a Library, active: Option<&str>) -> Element<'a, Message> {
+pub fn view<'a>(
+    library: &'a Library,
+    active: Option<&str>,
+    size: PreviewSize,
+) -> Element<'a, Message> {
     let spacing = cosmic::theme::spacing();
 
     if library.themes().is_empty() {
@@ -22,7 +28,7 @@ pub fn view<'a>(library: &'a Library, active: Option<&str>) -> Element<'a, Messa
     let cards = library
         .themes()
         .iter()
-        .map(|theme| card(theme, active == Some(theme.name.as_str())))
+        .map(|theme| card(theme, active == Some(theme.name.as_str()), size.scale()))
         .collect();
 
     // flex_row hands its limits straight to each card, and the scrollable's
@@ -33,8 +39,8 @@ pub fn view<'a>(library: &'a Library, active: Option<&str>) -> Element<'a, Messa
         .width(Length::Fill);
 
     widget::scrollable(widget::column::with_capacity(1).push(grid))
-    .height(Length::Fill)
-    .into()
+        .height(Length::Fill)
+        .into()
 }
 
 fn empty_state<'a>() -> Element<'a, Message> {
@@ -53,7 +59,7 @@ fn empty_state<'a>() -> Element<'a, Message> {
     widget::container(content).center(Length::Fill).into()
 }
 
-fn card(theme: &SavedTheme, active: bool) -> Element<'_, Message> {
+fn card(theme: &SavedTheme, active: bool, scale: f32) -> Element<'_, Message> {
     let spacing = cosmic::theme::spacing();
 
     let (mode_icon, mode_label) = if theme.is_dark() {
@@ -76,12 +82,12 @@ fn card(theme: &SavedTheme, active: bool) -> Element<'_, Message> {
         .align_y(Alignment::Center);
 
     let content = widget::column::with_capacity(3)
-        .push(preview::view(&theme.theme))
+        .push(preview::view(&theme.theme, scale))
         .push(title)
         .push(mode)
         .spacing(spacing.space_xs)
         .padding(spacing.space_xs)
-        .width(CARD_WIDTH);
+        .width(CARD_WIDTH * scale);
 
     let card = button::custom_image_button(content, None)
         .class(button::ButtonClass::Image)

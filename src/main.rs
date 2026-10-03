@@ -5,6 +5,7 @@ mod compat;
 mod desktop;
 mod i18n;
 mod library;
+mod preview_size;
 mod views;
 
 fn main() -> cosmic::iced::Result {
