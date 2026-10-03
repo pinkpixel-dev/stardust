@@ -11,7 +11,7 @@ use cosmic::iced::{Alignment, Length};
 use cosmic::prelude::*;
 use cosmic::widget::{self, button, tooltip};
 
-/// Card width at the small size.
+/// Card width at a scale of 1.0.
 const CARD_WIDTH: f32 = 220.0;
 
 pub fn view<'a>(

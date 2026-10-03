@@ -8,7 +8,7 @@ use cosmic::iced::{Background, Border, Color, Length};
 use cosmic::prelude::*;
 use cosmic::widget;
 
-/// Height at the small size. Everything else scales from the `scale` argument.
+/// Height at a scale of 1.0. Everything else scales from the `scale` argument.
 pub const HEIGHT: f32 = 116.0;
 
 /// Previews are roughly a third of real size, so radii shrink with them.

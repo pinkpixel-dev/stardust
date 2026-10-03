@@ -19,9 +19,9 @@ impl PreviewSize {
     /// Multiplier applied to the card and every measurement in the preview.
     pub fn scale(self) -> f32 {
         match self {
-            PreviewSize::Small => 1.0,
-            PreviewSize::Medium => 1.3,
-            PreviewSize::Large => 1.6,
+            PreviewSize::Small => 1.3,
+            PreviewSize::Medium => 1.6,
+            PreviewSize::Large => 2.0,
         }
     }
 
